@@ -11,54 +11,34 @@ import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
 import java.util.List;
 
-@Controller
+@RestController
+@RequestMapping("/api/customers")
 @RequiredArgsConstructor
 public class CustomerController {
 
     private final CustomerRepository customerRepository;
 
-    @GetMapping("/new")
-    public String showCustomerForm(Customer customer) {
-        return "add";
+    @GetMapping
+    public List<Customer> getCustomers() {
+        return customerRepository.findAll();
     }
 
-    @PostMapping("/add")
-    public String getCustomers(@Valid Customer customer, BindingResult result){
-        if (result.hasErrors()){
-            return "add";
+    @PostMapping
+    public Customer addCustomer(@Valid @RequestBody Customer customer) {
+        return customerRepository.save(customer);
+    }
+
+    @PutMapping("/{id}")
+    public Customer updateCustomer(@PathVariable("id") long id, @Valid @RequestBody Customer customer) {
+        if (!customerRepository.existsById(id)) {
+            throw new IllegalArgumentException("Invalid customer Id:" + id);
         }
-        customerRepository.save(customer);
-        return "redirect:customer";
+        customer.setId(id);
+        return customerRepository.save(customer);
     }
 
-    @GetMapping("/customer")
-    public String getCustomers(Model model){
-        List<Customer> allCustomers = customerRepository.findAll();
-        model.addAttribute("customers", allCustomers.isEmpty() ? null : allCustomers);
-        return "customers";
-    }
-
-    @GetMapping("/edit/{id}")
-    public String showUpdateForm(@PathVariable("id") long id, Model model) {
-        Customer customer = customerRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Invalid customer Id:" + id));
-        model.addAttribute("customer", customer);
-        return "update";
-    }
-
-    @PostMapping("/update/{id}")
-    public String updateUser(@PathVariable("id") long id, @Valid Customer customer, BindingResult result) {
-        if (result.hasErrors()) {
-            customer.setId(id);
-            return "update";
-        }
-        customerRepository.save(customer);
-        return "redirect:/customer";
-    }
-
-    @GetMapping("/delete/{id}")
-    public String deleteUser(@PathVariable("id") long id, Model model) {
-        Customer customer = customerRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Invalid customer Id:" + id));
-        customerRepository.delete(customer);
-        return "redirect:/customer";
+    @DeleteMapping("/{id}")
+    public void deleteCustomer(@PathVariable("id") long id) {
+        customerRepository.deleteById(id);
     }
 }
